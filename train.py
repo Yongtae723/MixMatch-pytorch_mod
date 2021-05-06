@@ -265,6 +265,7 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         logits_u = torch.cat(logits[1:], dim=0)
 
         Lx, Lu, w = criterion(logits_x, mixed_target[:batch_size], logits_u, mixed_target[batch_size:], epoch+batch_idx/args.train_iteration)
+        print(w)
 
         loss = Lx + w * Lu
 
