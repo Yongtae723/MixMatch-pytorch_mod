@@ -21,7 +21,7 @@ import models.wideresnet as models
 import dataset.cifar10 as dataset
 from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 from tensorboardX import SummaryWriter
-
+dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser(description='PyTorch MixMatch Training')
 # Optimization options
 parser.add_argument('--epochs', default=1024, type=int, metavar='N',
@@ -96,7 +96,7 @@ def main():
 
     def create_model(ema=False):
         model = models.WideResNet(num_classes=10)
-        model = model.cuda()
+        model = model.to(dev)
 
         if ema:
             for param in model.parameters():
@@ -220,9 +220,10 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
         targets_x = torch.zeros(batch_size, 10).scatter_(1, targets_x.view(-1,1).long(), 1)
 
         if use_cuda:
-            inputs_x, targets_x = inputs_x.cuda(), targets_x.cuda(non_blocking=True)
-            inputs_u = inputs_u.cuda()
-            inputs_u2 = inputs_u2.cuda()
+            
+            inputs_x, targets_x = inputs_x.to(dev), targets_x.to(dev)
+            inputs_u = inputs_u.to(dev)
+            inputs_u2 = inputs_u2.to(dev)
 
 
         with torch.no_grad():
@@ -320,12 +321,13 @@ def validate(valloader, model, criterion, epoch, use_cuda, mode):
             data_time.update(time.time() - end)
 
             if use_cuda:
-                inputs, targets = inputs.cuda(), targets.cuda(non_blocking=True)
+                inputs, targets = inputs.to(dev), targets.to(dev)
             # compute output
             outputs = model(inputs)
             loss = criterion(outputs, targets)
 
             # measure accuracy and record loss
+            # print(outputs,targets)
             prec1, prec5 = accuracy(outputs, targets, topk=(1, 5))
             losses.update(loss.item(), inputs.size(0))
             top1.update(prec1.item(), inputs.size(0))
